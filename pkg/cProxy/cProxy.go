@@ -6,9 +6,6 @@ import (
 	"net"
 	"net/http"
 	"poor-man-service-mesh/pkg/proxyserver"
-
-	//"poor-man-service-mesh/pkg/autocert"
-
 	"time"
 )
 
@@ -17,11 +14,6 @@ const (
 )
 
 type CProxy struct {
-	// port            int
-	// sslKeyFilePath  string
-	// sslCertFilePath string
-	// directoryURL    string
-	// secure          bool
 }
 
 func Build() proxyserver.HttpProxyInstance {

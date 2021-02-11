@@ -58,7 +58,6 @@ func (d DNSWatcher) GetWhitelistetDomains() []string {
 	return dnsNames
 }
 
-//func (d DNSWatcher) WatchAndUpdateAutocertManager(m *autocert.Manager) {
 func (d DNSWatcher) WatchAndUpdateAutocertManager(m *autocertLego.Manager) {
 
 	for {

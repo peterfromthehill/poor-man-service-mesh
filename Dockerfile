@@ -15,4 +15,4 @@ RUN apk update && apk add curl
 USER 1000
 COPY --from=builder /go/bin/poor-man-service-mesh /poor-man-service-mesh
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
-CMD ["/poor-man-service-mesh", "-directory-url", "https://acme.proxy.svc.cluster.local/acme/development/directory"]
+CMD ["/poor-man-service-mesh", "-directory-url", "https://acme.unusual.one/acme/development/directory"]

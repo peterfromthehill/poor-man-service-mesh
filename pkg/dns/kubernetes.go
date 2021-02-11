@@ -105,7 +105,7 @@ func (k *Kubeclient) AddChallencePortToService(serviceName string) error {
 
 		for _, p := range result.Spec.Ports {
 			if p.Port == 443 {
-				//service port ist vorhanden
+				//service port already exists
 				return nil
 			}
 		}
@@ -128,8 +128,6 @@ func (k *Kubeclient) AddChallencePortToService(serviceName string) error {
 
 		result.Spec.Ports = append(result.Spec.Ports, servicePort)
 
-		// result.Spec.Replicas = int32Ptr(1)                           // reduce replica count
-		// result.Spec.Template.Spec.Containers[0].Image = "nginx:1.13" // change nginx version
 		_, updateErr := servicesClient.Update(context.TODO(), result, metav1.UpdateOptions{})
 		return updateErr
 	})
