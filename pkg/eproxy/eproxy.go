@@ -51,9 +51,12 @@ func (eproxy *Eproxy) HandleTunneling(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = connection.NewRequestWithDst(clientConn, eproxy.externalProxy, host, port, false)
+	request, err := connection.NewRequestWithDst(clientConn, eproxy.externalProxy, host, port, false)
 	if err != nil {
 		klog.Infof("Request failed: %w", err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
+	request.Listen()
+	klog.Infof("%s", request.String())
+
 }

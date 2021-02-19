@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"poor-man-service-mesh/pkg/dpi/types"
 	"reflect"
 	"syscall"
 	"unsafe"
@@ -63,4 +64,13 @@ func getFileFromTCPConn(tcpConn *net.TCPConn) (*os.File, error) {
 		return nil, err
 	}
 	return file, nil
+}
+
+func contains(s []types.Protocol, e types.Protocol) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

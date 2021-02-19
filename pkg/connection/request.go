@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"poor-man-service-mesh/pkg/certpool"
+	"poor-man-service-mesh/pkg/dpi"
+	"poor-man-service-mesh/pkg/dpi/types"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,6 +22,7 @@ type Request struct {
 	dstPort   int
 	router    string
 	wg        *sync.WaitGroup
+	protocol  map[types.Protocol]struct{}
 }
 
 func NewRequestWithDst(srcConn Connection, router string, origAddr string, origPort int, secure bool) (*Request, error) {
@@ -30,8 +33,8 @@ func NewRequestWithDst(srcConn Connection, router string, origAddr string, origP
 		dstPort:   origPort,
 		router:    router,
 		wg:        &sync.WaitGroup{},
+		protocol:  make(map[types.Protocol]struct{}),
 	}
-	defer request.wg.Wait()
 	var err error
 	if secure {
 		err = request.establishSecureConnectionThroughRouter()
@@ -72,7 +75,6 @@ func (request *Request) establishInsecureConnectionThroughRouter() error {
 	if err != nil {
 		return err
 	}
-	request.Listen()
 	return nil
 }
 
@@ -98,7 +100,6 @@ func (request *Request) establishSecureConnectionThroughRouter() error {
 	if err != nil {
 		return err
 	}
-	request.Listen()
 	return nil
 
 }
@@ -131,7 +132,8 @@ func (request *Request) readUntilReady() error {
 		klog.Warningf("Read to server failed:", err.Error())
 		return err
 	}
-	klog.Infof("Revc byte len: %d", replyLen)
+	_ = replyLen
+	//klog.Infof("Revc byte len: %d", replyLen)
 	statusCode, err := strconv.Atoi(strings.Split(string(reply), " ")[1])
 	if err != nil {
 		klog.Errorf(err.Error())
@@ -148,31 +150,52 @@ func (request *Request) transfer(source Connection, dest Connection) {
 	defer source.Close()
 	defer dest.Close()
 	defer request.wg.Done()
+	dpi.Initialize()
+	defer dpi.Destroy()
 	for {
 		readBuffer := make([]byte, 1024)
 		readLen, err := source.Read(readBuffer)
 		if err != nil {
-			klog.Warningf("Error readin")
+			//klog.Warningf("Error readin")
 			break
 		} else {
-			//klog.Infof("Recv byte len: %d", readLen)
+			analyzeBuffer := make([]byte, readLen)
+			copy(analyzeBuffer, readBuffer)
+
+			packet := dpi.GetPacket(analyzeBuffer)
+			resultProtos := dpi.ClassifyFlow(packet)
+			klog.Infof("%q", resultProtos)
+			for _, v := range resultProtos {
+				request.protocol[v] = struct{}{}
+			}
 			if request.dstClient != nil {
 				sendBuffer := make([]byte, readLen)
 				copy(sendBuffer, readBuffer)
 				_, err := dest.Write(sendBuffer)
 				if err != nil {
-					klog.Warningf("Error writing")
+					//klog.Warningf("Error writing")
 					break
 				}
 			}
 		}
 	}
-	klog.Warningf("Error reading/writing, close connections")
+	//klog.Warningf("Error reading/writing, close connections")
 }
 
 func (request *Request) Listen() {
+	defer request.wg.Wait()
 	request.wg.Add(1)
 	go request.transfer(request.srcClient, request.dstClient)
 	request.wg.Add(1)
 	go request.transfer(request.dstClient, request.srcClient)
+}
+
+func (request *Request) String() string {
+	return fmt.Sprintf("%s -> %s %q", request.srcClient.RemoteAddr(), request.dstClient.RemoteAddr(), func() []types.Protocol {
+		var ret []types.Protocol
+		for k, _ := range request.protocol {
+			ret = append(ret, k)
+		}
+		return ret
+	}())
 }

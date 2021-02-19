@@ -3,10 +3,11 @@ module poor-man-service-mesh
 go 1.15
 
 require (
-	github.com/foomo/tlsconfig v0.0.0-20180418120404-b67861b076c9 // indirect
-	github.com/go-acme/lego/v4 v4.2.0 // indirect
+	github.com/google/gopacket v1.1.19
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/miekg/dns v1.1.38
+	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/paultag/sniff v0.0.0-20200207005214-cf7e4d167732
 	github.com/peterfromthehill/autocertLego v0.0.0-20210209204954-f1561af40a7a
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324 // indirect
@@ -17,6 +18,7 @@ require (
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.5.0
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009 // indirect
+	pault.ag/go/sniff v0.0.0-20200207005214-cf7e4d167732 // indirect
 
 )
 

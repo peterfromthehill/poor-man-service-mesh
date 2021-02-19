@@ -59,17 +59,22 @@ func (tproxy *TProxy) routeRequest(conn connection.Connection) {
 	}
 	klog.Infof("Resolved to hostname: %s", routerDNS)
 
+	var request *connection.Request
 	if tproxy.isIPInside(origAddrIP) {
 		klog.Infof("Route internal: %s:%d", origAddrIP, origPort)
 		dstrouter := fmt.Sprintf("%s:%d", strings.Trim(routerDNS[0], "."), origPort)
-		_, err = connection.NewRequest(conn, dstrouter, tproxy.secure)
+		request, err = connection.NewRequest(conn, dstrouter, tproxy.secure)
 	} else {
 		klog.Infof("Route external: %s", origAddrIP)
-		_, err = connection.NewRequest(conn, tproxy.exitProxy, tproxy.secure)
+		request, err = connection.NewRequest(conn, tproxy.exitProxy, tproxy.secure)
 	}
 	if err != nil {
 		klog.Errorf(err.Error())
 	}
+	klog.Infof("Listen!")
+	request.Listen()
+	klog.Infof("after Listen!")
+	klog.Infof(request.String())
 }
 
 func (tproxy *TProxy) isIPInside(ip net.IP) bool {

@@ -1,6 +1,8 @@
 package main
 
-import "flag"
+import (
+	"flag"
+)
 
 var config *MeshConfig
 
@@ -21,5 +23,6 @@ func init() {
 
 func main() {
 	flag.Parse()
+
 	run(config)
 }
