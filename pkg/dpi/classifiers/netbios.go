@@ -11,7 +11,7 @@ import (
 // NetBIOSClassifier struct
 type NetBIOSClassifier struct{}
 
-func checkTCPNetBIOS(payload []byte) bool {
+func checkTCPNetBIOS(payload []byte, packetsRest []types.Packet) bool {
 	if len(payload) < 8 {
 		return false
 	}
@@ -41,19 +41,20 @@ func checkUDPNetBIOSWrapper(isFirstPktBroadcast *bool) func([]byte, []gopacket.P
 }
 
 // HeuristicClassify for NetBIOSClassifier
-func (classifier NetBIOSClassifier) HeuristicClassify(packet *types.Packet) bool {
+func (classifier NetBIOSClassifier) HeuristicClassify(flow *types.Flow) (bool, interface{}) {
 	// var isFirstPktBroadcast bool
-	// packets := flow.GetPackets()
+	packets := flow.GetPackets()
 	// if len(packets) > 0 {
 	// 	if layer := packets[0].Layer(layers.LayerTypeIPv4); layer != nil {
 	// 		ipLayer := layer.(*layers.IPv4)
 	// 		isFirstPktBroadcast = ipLayer.DstIP[3] == 0xFF
 	// 	}
 	// }
-	isNetbiosTCP := checkTCPNetBIOS(packet.Payload)
+	isNetbiosTCP := checkFirstPayload(packets,
+		checkTCPNetBIOS)
 	// isNetbiosUDP := checkFirstPayload(packets, layers.LayerTypeUDP,
 	// 	checkUDPNetBIOSWrapper(&isFirstPktBroadcast))
-	return isNetbiosTCP //|| isNetbiosUDP
+	return isNetbiosTCP /*|| isNetbiosUDP */, struct{}{}
 }
 
 // GetProtocol returns the corresponding protocol

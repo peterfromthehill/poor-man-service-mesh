@@ -17,6 +17,7 @@ func GetConnFromTLSConn(tlsConn *tls.Conn) net.Conn {
 	// XXX: This is really BAD!!! Only way currently to get the underlying
 	// connection of the tls.Conn. At least until
 	// https://github.com/golang/go/issues/29257 is solved.
+	// https://go-review.googlesource.com/c/go/+/325250/4/src/crypto/tls/conn.go
 	conn := reflect.ValueOf(tlsConn).Elem().FieldByName("conn")
 	conn = reflect.NewAt(conn.Type(), unsafe.Pointer(conn.UnsafeAddr())).Elem()
 	return conn.Interface().(net.Conn)
@@ -73,4 +74,16 @@ func contains(s []types.Protocol, e types.Protocol) bool {
 		}
 	}
 	return false
+}
+
+func equal(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
 }

@@ -9,18 +9,23 @@ import (
 type SMTPClassifier struct{}
 
 // HeuristicClassify for SMTPClassifier
-func (classifier SMTPClassifier) HeuristicClassify(packet *types.Packet) bool {
-	payload := packet.Payload
-
-	payloadStr := string(payload)
-	for _, line := range strings.Split(payloadStr, "\n") {
-		if len(line) > 0 && strings.HasPrefix(line, "220 ") {
-			return true
-		}
-	}
-	return (strings.HasPrefix(payloadStr, "EHLO ") ||
-		strings.HasPrefix(payloadStr, "HELO ")) &&
-		strings.HasSuffix(payloadStr, "\n")
+func (classifier SMTPClassifier) HeuristicClassify(flow *types.Flow) (bool, interface{}) {
+	return checkFirstPayload(flow.GetPackets(),
+		func(payload []byte, packetsRest []types.Packet) bool {
+			payloadStr := string(payload)
+			for _, line := range strings.Split(payloadStr, "\n") {
+				if len(line) > 0 && !strings.HasPrefix(line, "220") {
+					return false
+				}
+			}
+			return checkFirstPayload(packetsRest,
+				func(payload []byte, _ []types.Packet) bool {
+					payloadStr := string(payload)
+					return (strings.HasPrefix(payloadStr, "EHLO ") ||
+						strings.HasPrefix(payloadStr, "HELO ")) &&
+						strings.HasSuffix(payloadStr, "\n")
+				})
+		}), struct{}{}
 }
 
 // GetProtocol returns the corresponding protocol

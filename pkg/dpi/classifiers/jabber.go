@@ -9,10 +9,13 @@ import (
 type JABBERClassifier struct{}
 
 // HeuristicClassify for JABBERClassifier
-func (classifier JABBERClassifier) HeuristicClassify(packet *types.Packet) bool {
-	payloadStr := string(packet.Payload)
-	result, _ := regexp.MatchString("<?xml\\sversion='\\d+.\\d+'?.*", payloadStr)
-	return result
+func (classifier JABBERClassifier) HeuristicClassify(flow *types.Flow) (bool, interface{}) {
+	return checkFirstPayload(flow.GetPackets(),
+		func(payload []byte, packetsRest []types.Packet) bool {
+			payloadStr := string(payload)
+			result, _ := regexp.MatchString("<?xml\\sversion='\\d+.\\d+'?.*", payloadStr)
+			return result
+		}), struct{}{}
 }
 
 // GetProtocol returns the corresponding protocol

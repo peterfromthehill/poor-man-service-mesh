@@ -52,8 +52,8 @@ func Destroy() (errs []error) {
 	return
 }
 
-func GetPacket(payload []byte) *types.Packet {
-	return &types.Packet{
+func GetPacket(payload []byte) types.Packet {
+	return types.Packet{
 		Payload: payload,
 	}
 }
@@ -62,11 +62,24 @@ func GetPacket(payload []byte) *types.Packet {
 // modules in order, until one of them manages to classify it. It returns
 // the detected protocol as well as the source that made the classification.
 // If no classification is made, the protocol Unknown is returned.
-func ClassifyFlow(packet *types.Packet) []types.Protocol {
-	var result []types.Protocol
+// func ClassifyFlow(packet *types.Packet) []types.Protocol {
+// 	var result []types.Protocol
+// 	for _, module := range activatedModules {
+// 		resultTmp := module.ClassifyFlow(packet)
+// 		result = append(result, resultTmp.ClassificationResult...)
+// 	}
+// 	return result
+// }
+
+func ClassifyFlow(flow *types.Flow) []types.ClassificationResult {
+	var result []types.ClassificationResult
 	for _, module := range activatedModules {
-		resultTmp := module.ClassifyFlow(packet)
-		result = append(result, resultTmp.ClassificationResult...)
+		resultTmp := module.ClassifyFlow(flow)
+		if resultTmp.Protocol != types.Unknown {
+			result = append(result, resultTmp)
+			// 	result = resultTmp
+			// 	return
+		}
 	}
 	return result
 }

@@ -23,7 +23,7 @@ type GenericClassifier interface {
 type HeuristicClassifier interface {
 	// HeuristicClassify returns whether this classifier can identify the flow
 	// using heuristics.
-	HeuristicClassify(*types.Packet) bool
+	HeuristicClassify(*types.Flow) (bool, interface{})
 }
 
 // ClassifierModuleConfig is given to the module's ConfigureModule method, in
@@ -37,19 +37,19 @@ type ClassifierModuleConfig struct {
 func NewClassifierModule() *ClassifierModule {
 	module := &ClassifierModule{}
 	module.classifierList = []GenericClassifier{
-		// FTPClassifier{},
+		FTPClassifier{},
 		HTTPClassifier{},
 		//ICMPClassifier{}, not supported
-		// NetBIOSClassifier{},
-		// DNSClassifier{},
-		// RDPClassifier{},
-		// RPCClassifier{},
-		// SMBClassifier{},
+		NetBIOSClassifier{},
+		DNSClassifier{},
+		RDPClassifier{},
+		RPCClassifier{},
+		SMBClassifier{},
 		SMTPClassifier{},
 		SSHClassifier{},
 		SSLClassifier{},
-		// JABBERClassifier{},
-		// MQTTClassifier{},
+		JABBERClassifier{},
+		MQTTClassifier{},
 	}
 	return module
 }
@@ -67,17 +67,33 @@ func (module *ClassifierModule) Destroy() error {
 // ClassifyFlow applies all the classifiers to a flow and returns the protocol
 // that is detected by a classifier if there is one. Otherwise the returned
 // protocol is Unknown.
-func (module *ClassifierModule) ClassifyFlow(packet *types.Packet) *types.Packet {
+// func (module *ClassifierModule) ClassifyFlow(packet *types.Packet) *types.Packet {
+// 	for _, classifier := range module.classifierList {
+// 		if heuristic, ok := classifier.(HeuristicClassifier); ok {
+// 			if heuristic.HeuristicClassify(packet) {
+// 				protocol := classifier.GetProtocol()
+// 				packet.AddClassificationResult(protocol)
+// 				break
+// 			}
+// 		}
+// 	}
+// 	return packet
+// }
+
+func (module *ClassifierModule) ClassifyFlow(flow *types.Flow) (result types.ClassificationResult) {
 	for _, classifier := range module.classifierList {
 		if heuristic, ok := classifier.(HeuristicClassifier); ok {
-			if heuristic.HeuristicClassify(packet) {
-				protocol := classifier.GetProtocol()
-				packet.AddClassificationResult(protocol)
+			hok, details := heuristic.HeuristicClassify(flow)
+			if hok {
+				result.Protocol = classifier.GetProtocol()
+				result.Details = details
+				//flow.SetClassificationResult(result.Protocol, result.Source)
+				flow.AddClassificationResult(result)
 				break
 			}
 		}
 	}
-	return packet
+	return
 }
 
 // // ClassifyFlowAll applies all the classifiers to a flow and returns the
@@ -97,28 +113,28 @@ func (module *ClassifierModule) ConfigureModule(config ClassifierModuleConfig) {
 // // checkFlowLayer applies the check function to the specified layer of each
 // // packet in a flow, where it is available. It returns whether there is a
 // // packet in the flow for which the check function returns true.
-// func checkFlowLayer(flow *types.Flow, layerType gopacket.LayerType, checkFunc func(layer gopacket.Layer) bool) bool {
-// 	for _, packet := range flow.GetPackets() {
-// 		if layer := packet.Layer(layerType); layer != nil {
-// 			if checkFunc(layer) {
-// 				return true
-// 			}
-// 		}
-// 	}
-// 	return false
-// }
+func checkFlowPayload(flow *types.Flow, checkFunc func(payload []byte) bool) bool {
+	for _, packet := range flow.GetPackets() {
+		if payload := packet.Payload; len(payload) > 0 {
+			if checkFunc(payload) {
+				return true
+			}
+		}
+	}
+	return false
+}
 
 // // checkFirstPayload applies the check function to the payload of the first
 // // packet that has the specified layer. It returns the result of that function
 // // on that first packet, or false if no such packet exists.
-// func checkFirstPayload(packets []gopacket.Packet, layerType gopacket.LayerType,
-// 	checkFunc func(payload []byte, packetsRest []gopacket.Packet) bool) bool {
-// 	for i, packet := range packets {
-// 		if layer := packet.Layer(layerType); layer != nil {
-// 			if payload := layer.LayerPayload(); payload != nil && len(payload) > 0 {
-// 				return checkFunc(payload, packets[i+1:])
-// 			}
-// 		}
-// 	}
-// 	return false
-// }
+func checkFirstPayload(packets []types.Packet,
+	checkFunc func(payload []byte, packetsRest []types.Packet) bool) bool {
+	for i, packet := range packets {
+		//if layer := packet.Layer(layerType); layer != nil {
+		if payload := packet.Payload; len(payload) > 0 {
+			return checkFunc(payload, packets[i+1:])
+		}
+		//}
+	}
+	return false
+}

@@ -38,12 +38,6 @@ func (p *Packet) AddClassificationResult(clazz Protocol) {
 	p.ClassificationResult = append(p.ClassificationResult, clazz)
 }
 
-type Module interface {
-	Initialize() error
-	Destroy() error
-	ClassifyFlow(packet *Packet) *Packet
-}
-
 var flowTracker *cache.Cache
 var flowTrackerMtx sync.Mutex
 
